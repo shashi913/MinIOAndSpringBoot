@@ -4,11 +4,15 @@ import io.minio.*;
 import io.minio.errors.MinioException;
 import io.minio.messages.Item;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,7 +28,35 @@ public class MinioService {
         this.minioClient = minioClient;
     }
 
+    @Scheduled(cron = "0 45 14 28 * ?")
+    public void removeObjectsMonthly() {
+        System.out.println("Monthly task started at " + LocalDateTime.now());
+        try {
 
+            if (minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build())) {
+                removeAllObjects(minioClient);
+                System.out.println("Objects in bucket '" + bucketName + "' removed (monthly).");
+            } else {
+                System.out.println("Bucket '" + bucketName + "' does not exist (monthly).");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void removeAllObjects(MinioClient minioClient) throws Exception {
+        Iterable<Result<Item>> results = minioClient.listObjects(ListObjectsArgs.builder().bucket(bucketName).build());
+        List<String> objectNames = new ArrayList<>();
+        for (Result<Item> result : results) {
+            Item item = result.get();
+            objectNames.add(item.objectName());
+        }
+
+        for (String objectName : objectNames) {
+            minioClient.removeObject(RemoveObjectArgs.builder().bucket(bucketName).object(objectName).build());
+        }
+    }
 
     public String uploadFile(MultipartFile file) {
         try {
