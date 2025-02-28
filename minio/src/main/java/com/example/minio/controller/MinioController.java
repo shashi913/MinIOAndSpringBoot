@@ -1,19 +1,17 @@
 package com.example.minio.controller;
 
 import com.example.minio.service.MinioService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.util.List;
 
 @RestController
 @RequestMapping("/files")
-public class MinioController { ;
+public class MinioController {
 
     private final MinioService minioService;
 
@@ -52,5 +50,23 @@ public class MinioController { ;
             return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
         }
     }
-}
 
+    @GetMapping("/list")
+    public ResponseEntity<List<String>> listFiles() {
+        try {
+            return ResponseEntity.ok(minioService.listFiles());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(null);
+        }
+    }
+
+    @PostMapping("/move")
+    public ResponseEntity<String> moveFile(@RequestParam("fileName") String fileName,
+                                           @RequestParam("targetBucket") String targetBucket) {
+        try {
+            return ResponseEntity.ok(minioService.moveFile(fileName, targetBucket));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
+        }
+    }
+}
