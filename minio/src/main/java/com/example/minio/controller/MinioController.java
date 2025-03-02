@@ -8,6 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/files")
@@ -69,4 +70,10 @@ public class MinioController {
             return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
         }
     }
+
+    @GetMapping("/metadata/{fileName}")
+    public ResponseEntity<Map<String, String>> getFileMetadata(@PathVariable String fileName) {
+        return ResponseEntity.ok(minioService.getFileMetadata(fileName));
+    }
+
 }

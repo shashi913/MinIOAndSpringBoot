@@ -14,7 +14,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import io.minio.StatObjectArgs;
+import io.minio.StatObjectResponse;
 
 @Service
 public class MinioService {
@@ -146,4 +151,44 @@ public class MinioService {
             return "Error moving file: " + e.getMessage();
         }
     }
+
+
+
+    public Map<String, String> getFileMetadata(String fileName) {
+        try {
+            // Fetch metadata from MinIO
+            StatObjectResponse stat = minioClient.statObject(
+                    StatObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(fileName)
+                            .build()
+            );
+
+            // Prepare metadata map
+            Map<String, String> metadata = new HashMap<>();
+            metadata.put("File Name", fileName);
+            metadata.put("Size (bytes)", String.valueOf(stat.size()));
+            metadata.put("ETag", stat.etag());
+            metadata.put("Last Modified", stat.lastModified().toString());
+            metadata.put("Content Type", stat.contentType());
+
+            // Retention Details (if applicable)
+            if (stat.retentionMode() != null) {
+                metadata.put("Retention Mode", stat.retentionMode().name());
+                metadata.put("Retention Until", stat.retentionRetainUntilDate().toString());
+            }
+
+            // Legal Hold (if applicable)
+            metadata.put("Legal Hold", String.valueOf(stat.legalHold()));
+
+            // User Metadata (custom metadata added during upload)
+            metadata.putAll(stat.userMetadata());
+
+            return metadata;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching metadata for file: " + fileName, e);
+        }
+    }
+
 }
